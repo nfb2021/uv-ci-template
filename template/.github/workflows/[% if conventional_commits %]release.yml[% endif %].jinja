@@ -1,0 +1,30 @@
+# Managed by uv-ci-template; change it via `copier update`.
+# `just bump` + `git push --follow-tags` -> draft GitHub release with generated notes.
+# Review and publish the draft by hand[% if pypi_publish %]; publishing it triggers publish.yml[% endif %].
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          prerelease=""
+          if echo "$TAG" | grep -Eq '(a|b|rc)[0-9]+$'; then prerelease="--prerelease"; fi
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "[[ project_name ]] $TAG" \
+            --generate-notes --draft --verify-tag $prerelease

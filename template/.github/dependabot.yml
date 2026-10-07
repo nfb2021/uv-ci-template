@@ -1,0 +1,18 @@
+# Managed by uv-ci-template. Weekly, grouped update PRs.
+version: 2
+updates:
+  - package-ecosystem: uv              # updates pyproject.toml *and* uv.lock
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    groups: { python: { patterns: ["*"] } }
+    labels: [dependencies]
+  - package-ecosystem: github-actions  # keeps the pinned action SHAs current
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    groups: { actions: { patterns: ["*"] } }
+    labels: [dependencies, ci]
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    groups: { hooks: { patterns: ["*"] } }
+    labels: [dependencies, ci]

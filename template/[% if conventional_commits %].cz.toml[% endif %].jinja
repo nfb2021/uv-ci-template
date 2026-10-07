@@ -1,0 +1,10 @@
+# Managed by uv-ci-template; change it via `copier update`.
+# Conventional Commits + version bumps: `just bump` (cz bump) updates the version in
+# pyproject.toml and uv.lock, writes CHANGELOG.md and creates the tag v<version>.
+[tool.commitizen]
+name = "cz_conventional_commits"
+version_provider = "uv"
+tag_format = "v$version"
+update_changelog_on_bump = true
+major_version_zero = true
+annotated_tag = true

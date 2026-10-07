@@ -1,0 +1,62 @@
+# Managed by uv-ci-template; change it via `copier update`.
+# Shared recipes, imported by the repo's justfile (`import 'ci.just'`).
+
+# lint, format and type-check
+[group('quality')]
+check: lint fmt types
+
+# lint with ruff (auto-fix)
+[group('quality')]
+lint:
+    uv run --frozen ruff check --fix
+
+# format with ruff
+[group('quality')]
+fmt:
+    uv run --frozen ruff format
+
+# type-check with ty
+[group('quality')]
+types:
+    uv run --frozen ty check
+
+# what CI runs: all pre-commit hooks on all (tracked) files, then ty
+[group('quality')]
+ci:
+    uv lock --check
+    uv run --frozen pre-commit run --all-files --show-diff-on-failure
+    [% if not ty_blocking %]-[% endif %]uv run --frozen ty check
+
+# run the tests with coverage
+[group('test')]
+test *ARGS:
+    uv run --frozen pytest --cov --cov-report=term-missing {{ ARGS }}
+
+# install the dev tools and the git hooks (pre-commit, commit-msg, pre-push)
+[group('setup')]
+hooks:
+    uv sync
+    uv run --frozen pre-commit install --install-hooks
+
+# upgrade all locked dependencies and the pre-commit hook revisions
+[group('setup')]
+upgrade:
+    uv lock --upgrade
+    uv sync
+    uv run --frozen pre-commit autoupdate
+
+# re-apply the latest uv-ci-template
+[group('setup')]
+update-template:
+    uvx copier update --trust
+[% if conventional_commits %]
+# bump version, write CHANGELOG.md, tag (INCREMENT: auto | patch | minor | major)
+[group('release')]
+bump INCREMENT="auto":
+    uv run --frozen cz bump --yes {{ if INCREMENT == "auto" { "" } else { "--increment " + uppercase(INCREMENT) } }}
+    @echo "Now push the commit and the tag: git push --follow-tags"
+[% endif %]
+# require a PR with green CI on the default branch (GitHub ruleset; run once)
+[group('setup')]
+protect:
+    gh api --method POST repos/{owner}/{repo}/rulesets --input .github/ruleset.json

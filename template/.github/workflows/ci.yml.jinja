@@ -1,0 +1,99 @@
+# Managed by uv-ci-template; change it via `copier update`.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1" # weekly: catches breakage from new upstream releases
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_LOCKED: "1" # every uv command fails if uv.lock is out of date with pyproject.toml
+  FORCE_COLOR: "1"
+
+jobs:
+  hooks:
+    name: pre-commit hooks (ruff, uv.lock, whitespace, ...)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Cache pre-commit environments
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+      - name: Run all hooks on all files
+        run: uv run --frozen pre-commit run --all-files --show-diff-on-failure
+
+  types:
+    name: ty
+    runs-on: ubuntu-latest
+[%- if not ty_blocking %]
+    continue-on-error: true # reporting only (ty_blocking = false in .copier-answers.yml)
+[%- endif %]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: uv run --frozen ty check --output-format github
+[% if conventional_commits %]
+  commits:
+    name: conventional commits
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Check every commit message in this PR
+        run: uv run --frozen cz check --rev-range "origin/${{ github.base_ref }}..HEAD"
+[% endif %]
+  tests:
+    name: tests (${{ matrix.os }}, py${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [[ (["ubuntu-latest", "macos-latest", "windows-latest"] if test_all_os else ["ubuntu-latest"]) | tojson ]]
+        python: [[ python_versions | map('string') | list | tojson ]]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          python-version: ${{ matrix.python }}
+      - name: pytest
+        # exit code 5 = no tests collected: fine for repos without tests yet
+        run: uv run --frozen pytest --cov --cov-report=term-missing || [ $? -eq 5 ]
+
+  # The single required status check (see .github/ruleset.json / `just protect`).
+  ci-ok:
+    name: ci-ok
+    if: always()
+    # (ty drops out of this list when ty_blocking = false: its job then only reports)
+    needs: [hooks, [% if ty_blocking %]types, [% endif %][% if conventional_commits %]commits, [% endif %]tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: All required jobs passed (or were skipped)
+        run: |
+          echo '${{ toJSON(needs) }}'
+          [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = "false" ]

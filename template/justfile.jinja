@@ -1,0 +1,8 @@
+# [[ project_name ]] task runner. Shared recipes live in ci.just (managed by uv-ci-template);
+# add project-specific recipes below.
+set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
+
+import 'ci.just'
+
+_default:
+    @just --list --unsorted

@@ -1,0 +1,105 @@
+# uv-ci-template: plug-and-play quality gates for uv-managed Python repos.
+#
+#   fresh:     uv init --package myproj && cd myproj && git init
+#              uvx copier copy --trust gh:nfb2021/uv-ci-template .
+#   existing:  cd existing-repo && uvx copier copy --trust gh:nfb2021/uv-ci-template .
+#   update:    uvx copier update --trust          (re-applies the latest standard)
+#
+# --trust is needed because a post-copy task adds the dev tools with `uv add --dev`
+# and installs the git hooks (see hooks/post_copy.py).
+
+_min_copier_version: "9.4"
+_subdirectory: template
+_answers_file: .copier-answers.yml
+# [[ ]] / [% %] instead of {{ }} / {% %}, so GitHub Actions' ${{ }} and just's {{ }}
+# need no escaping inside the templates.
+_envops:
+  variable_start_string: "[["
+  variable_end_string: "]]"
+  block_start_string: "[%"
+  block_end_string: "%]"
+
+# Files a repo usually already owns: created for fresh repos, never overwritten.
+_skip_if_exists:
+  - .gitignore
+  - .gitattributes
+  - justfile
+
+_tasks:
+  - command:
+      - uv
+      - run
+      - --no-project
+      - --python
+      - ">=3.11"
+      - python
+      - "[[ _copier_conf.src_path ~ '/hooks/post_copy.py' ]]"
+      - "--dev-deps=[[ dev_deps | join(' ') ]]"
+
+_message_after_copy: |
+  Done. Next steps:
+    just check        # lint + format + types locally
+    just test         # pytest with coverage
+    git add -A && git commit -m "ci: adopt uv-ci-template"
+    just protect      # (once, after pushing) require green CI on the default branch
+
+# ── Questions ────────────────────────────────────────────────────────────────
+project_name:
+  type: str
+  help: Project name (used in workflow titles and release names)
+  default: "[[ _copier_conf.dst_path | realpath | basename ]]"
+
+github_owner:
+  type: str
+  help: GitHub user or organization that owns the repo
+  default: nfb2021
+
+python_versions:
+  type: yaml
+  help: Python versions to test in CI (first = oldest supported, last = default)
+  default: ["3.12", "3.13", "3.14"]
+
+test_all_os:
+  type: bool
+  help: Run the test matrix on Ubuntu, macOS and Windows (not just Ubuntu)?
+  default: true
+
+ty_blocking:
+  type: bool
+  help: >-
+    Should ty type errors fail CI? Say no when adopting on an existing code base;
+    errors are then reported but do not block merges.
+  default: true
+
+line_length:
+  type: int
+  help: Maximum line length for ruff
+  default: 88
+
+conventional_commits:
+  type: bool
+  help: Enforce Conventional Commits (commitizen) locally and on pull requests?
+  default: true
+
+security_scans:
+  type: bool
+  help: Add CodeQL and OpenSSF Scorecard workflows? (Scorecard only works on public repos)
+  default: true
+
+pypi_publish:
+  type: bool
+  help: Add a PyPI publishing workflow (Trusted Publishing, on GitHub release)?
+  default: false
+
+# ── Pinned versions (not asked; bumped by updating this template) ───────────
+uv_version:
+  type: str
+  default: "0.12.23"
+  when: false
+
+dev_deps:
+  type: yaml
+  when: false
+  default: >-
+    [[ ["ruff>=0.16.10", "ty>=0.0.85", "pytest>=9.1.1", "pytest-cov>=7.1.0",
+        "pre-commit>=4.6.2"] + (["commitizen>=4.19.2"] if conventional_commits else []) ]]

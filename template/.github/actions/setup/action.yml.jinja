@@ -1,0 +1,24 @@
+# Managed by uv-ci-template. The single place that pins uv for CI.
+name: Set up uv
+description: Install uv (pinned), a Python version, and the locked project environment
+inputs:
+  python-version:
+    description: Python version to install (default = .python-version / requires-python)
+    required: false
+    default: ""
+  sync-args:
+    description: Extra arguments for `uv sync`
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Install uv
+      uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      with:
+        version: "[[ uv_version ]]"
+        python-version: ${{ inputs.python-version }}
+        enable-cache: true
+    - name: Sync locked environment
+      shell: bash
+      run: uv sync --locked ${{ inputs.sync-args }}

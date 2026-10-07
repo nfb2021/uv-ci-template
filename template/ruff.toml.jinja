@@ -1,0 +1,33 @@
+# Managed by uv-ci-template; change it via `copier update`.
+# Takes precedence over [tool.ruff] in pyproject.toml.
+# Philosophy: catch real bugs and keep one formatting style; don't fight
+# scientists over naming.
+line-length = [[ line_length ]]
+target-version = "py[[ python_versions[0] | replace('.', '') ]]"
+
+[lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes (undefined names, unused imports, ...)
+    "W",    # pycodestyle warnings
+    "I",    # isort (import order)
+    "UP",   # pyupgrade (modern syntax for target-version)
+    "B",    # flake8-bugbear (likely bugs)
+    "RUF",  # ruff-specific rules
+]
+ignore = [
+    "E501",    # line length: the formatter handles code; long strings/URLs are fine
+    "RUF001",  # ambiguous unicode in strings (°, µ, Greek letters in science code)
+    "RUF002",  # ... in docstrings
+    "RUF003",  # ... in comments
+    "B905",    # zip() without strict=
+]
+
+[lint.per-file-ignores]
+"__init__.py" = ["F401"]  # re-exports
+"**/*.ipynb" = ["E402", "B018"]  # notebook imports per cell, bare display expressions
+
+[format]
+quote-style = "double"
+line-ending = "lf"
+docstring-code-format = true

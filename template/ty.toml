@@ -1,0 +1,9 @@
+# Managed by uv-ci-template; change it via `copier update`.
+# Takes precedence over [tool.ty] in pyproject.toml. The Python version is taken
+# from `requires-python` in pyproject.toml.
+#
+# Silence a rule project-wide:   [rules] <rule-name> = "ignore"
+# Silence it for some files:     [[overrides]] include = ["path/**"]  + [overrides.rules]
+# Rule reference: https://docs.astral.sh/ty/reference/rules/
+
+[rules]

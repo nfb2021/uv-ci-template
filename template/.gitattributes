@@ -1,0 +1,10 @@
+# Normalize line endings: LF in the repo and on checkout (macOS, Linux, Windows alike)
+* text=auto eol=lf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+# Binary data
+*.nc binary
+*.tif binary
+*.tiff binary
+*.png binary
+*.pdf binary
