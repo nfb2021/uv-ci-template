@@ -50,7 +50,7 @@ just protect
 | `ty_blocking` | yes | no = ty only reports (for adopting on existing code); also drops the pre-push ty hook |
 | `line_length` | 88 | ruff |
 | `conventional_commits` | yes | commit-msg hook, PR commit check, `just bump`, draft releases on tags |
-| `security_scans` | yes | CodeQL and OpenSSF Scorecard (Scorecard needs a public repo) |
+| `security_scans` | yes | CodeQL and OpenSSF Scorecard (public repos; on private ones CodeQL needs paid GitHub Code Security) |
 | `pypi_publish` | no | PyPI publishing via Trusted Publishing when a GitHub release is published |
 
 Answers are stored in `.copier-answers.yml`; change one with
@@ -64,13 +64,13 @@ Answers are stored in `.copier-answers.yml`; change one with
 | `uv.lock` matches `pyproject.toml` | pre-commit (`uv-lock`) | `ci` | `hooks` job + `UV_LOCKED=1` on every uv command |
 | whitespace, EOF, LF line endings, case conflicts, merge markers, YAML/TOML syntax, files > 1 MB, private keys | pre-commit | `ci` | `hooks` job |
 | ty type check | pre-push | `types`, `check` | `types` job |
-| Conventional Commit messages | commit-msg | n/a | `commits` job (every commit of a PR) |
+| Conventional Commit messages | commit-msg | n/a | `commits` job (every commit of a PR) + `pr-title.yml` (the PR title, which becomes the commit on squash merge); Dependabot is configured to write `chore(deps): …` / `ci(deps): …` |
 | pytest + coverage | n/a | `test` | `tests` matrix: OS × Python |
-| all of the above | | | `ci-ok`: the **single required status check** |
+| all of the above | | | `ci-ok` (+ `pr-title`): the **required status checks** |
 
 CI runs `pre-commit run --all-files`, so skipping hooks locally (`--no-verify`, or never
 installing them) cannot get code past CI. `just protect` creates a GitHub ruleset for
-the default branch: PRs only, no force-pushes or deletion, and `ci-ok` must pass
+the default branch: PRs only, no force-pushes or deletion, and `ci-ok` (and `pr-title`) must pass
 (GitHub enforces rulesets on public repos, or on private repos with a paid plan).
 
 ## Files added to a repo
@@ -83,6 +83,7 @@ the default branch: PRs only, no force-pushes or deletion, and `ci-ok` must pass
 | `justfile` | repo | created only if missing; just imports `ci.just`, add your own recipes here |
 | `.github/actions/setup/action.yml` | template | the only place that pins the uv version for CI |
 | `.github/workflows/ci.yml` | template | hooks, ty, commits, tests, ci-ok |
+| `.github/workflows/pr-title.yml` | template | PR title must be a Conventional Commit |
 | `.github/workflows/release.yml` | template | tag `v*` → draft GitHub release with generated notes |
 | `.github/workflows/publish.yml` | template | optional, PyPI Trusted Publishing |
 | `.github/workflows/codeql.yml`, `scorecard.yml` | template | optional |

@@ -83,7 +83,9 @@ conventional_commits:
 
 security_scans:
   type: bool
-  help: Add CodeQL and OpenSSF Scorecard workflows? (Scorecard only works on public repos)
+  help: >-
+    Add CodeQL and OpenSSF Scorecard workflows? (Free on public repos; on private repos
+    CodeQL needs GitHub Code Security and Scorecard is skipped, so say no there.)
   default: true
 
 pypi_publish:

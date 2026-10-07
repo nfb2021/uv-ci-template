@@ -1,0 +1,25 @@
+# Managed by uv-ci-template; change it via `copier update`.
+# On squash merge the PR title becomes the commit message on main, so it must be a
+# Conventional Commit too. Separate from ci.yml so renaming a PR re-runs only this check.
+name: PR title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  pr-title:
+    name: pr-title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: PR title is a Conventional Commit
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: uv run --frozen cz check --message "$TITLE"
